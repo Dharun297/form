@@ -1,8 +1,9 @@
 import axios from "axios";
 import React, { ChangeEvent, ReactNode, useEffect, useState } from "react";
+axios.defaults.baseURL = "http://localhost:5000/";
+
 
 interface Merchant {
-  category: string;
   name: string;
   email: string;
   mobilenumber: string;
@@ -11,10 +12,12 @@ interface Merchant {
   contactnumber: string;
   contactemail: string;
   notes: string;
-  business: string | undefined;
+  businesstype: string | undefined;
+  category: string;
+  comissionpercentage: number | string;
+  activefrom: string;
   paymentOption: string;
   criticalAccount: string[];
-  comissionpercentage: number;
 }
 
 const MerchantForm: React.FC = () => {
@@ -25,22 +28,21 @@ const MerchantForm: React.FC = () => {
   const [contactname, setcontactname] = useState<string>("");
   const [contactnumber, setcontactnumber] = useState<string>("");
   const [contactemail, setcontactemail] = useState<string>("");
-  const [business, setBusiness] = useState<string | undefined>(undefined);
-  const [category, setCategory] = useState<string>("");
   const [notes, setnotes] = useState<string>("");
-  const [comissionpercentage, setComissionPercentage] = useState<number | string>('');
+  const [businesstype, setbusinesstype] = useState<string | undefined>(undefined);
+  const [category, setCategory] = useState<string>("");
+  const [comissionpercentage, setComissionPercentage] = useState<string>("");
+  const [activefrom, setActiveFrom] = useState<string>("");
   const [criticalAccount, setCriticalAccount] = useState<string[]>([]);
   const [paymentOption, setPaymentOption] = useState<string>("");
   const [merchantData, setMerchantData] = useState<Merchant[]>([]);
-  const [selectedPaymentOption, setSelectedPaymentOption] = useState<string>("All");
-
-
+  const [selectedPaymentOption, setSelectedPaymentOption] =    useState<string>("All");
   const [editingIndex, setEditingIndex] = useState<number>(-1);
 
   useEffect(() => {
     // Fetch merchant data from the backend when the component mounts
     axios
-      .get("http://localhost:3000/api/merchants") // Changed post to get for fetching data
+      .get("http://localhost:3000/api/Signup") // Changed post to get for fetching data
       .then((response) => {
         setMerchantData(response.data);
       })
@@ -49,7 +51,6 @@ const MerchantForm: React.FC = () => {
       });
   }, []);
 
- 
   const handlePaymentOptionChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -77,8 +78,9 @@ const MerchantForm: React.FC = () => {
     setcontactnumber(merchantToEdit.contactnumber);
     setcontactemail(merchantToEdit.contactemail);
     setnotes(merchantToEdit.notes);
-    setBusiness(merchantToEdit.business);
-    setcomissionpercentage(merchantToEdit.comissionpercentage);
+    setbusinesstype(merchantToEdit.businesstype);
+    setComissionPercentage(String(merchantToEdit.comissionpercentage));
+    setActiveFrom(new Date(merchantToEdit.activefrom).toISOString());
     setPaymentOption(merchantToEdit.paymentOption);
     setCriticalAccount(merchantToEdit.criticalAccount);
     setEditingIndex(index);
@@ -108,14 +110,13 @@ const MerchantForm: React.FC = () => {
       contactname,
       contactnumber,
       contactemail,
-      business,
+      businesstype,
       notes,
       criticalAccount,
-      calculatedCommission,
       category,
       comissionpercentage,
-      paymentOption
-
+      activefrom,
+      paymentOption,
     };
 
     if (editingIndex !== -1) {
@@ -135,10 +136,12 @@ const MerchantForm: React.FC = () => {
     setcontactname("");
     setcontactnumber("");
     setcontactemail("");
-    setBusiness(undefined);
+    setbusinesstype("");
     setnotes("");
     setPaymentOption("");
     setCriticalAccount([]);
+    setComissionPercentage("");
+    setActiveFrom("");
   };
 
   const calculateCommission = () => {
@@ -168,16 +171,17 @@ const MerchantForm: React.FC = () => {
   };
 
   const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setBusiness(e.target.value);
+    setbusinesstype(e.target.value);
   };
 
-    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCategory(e.target.value);
   };
-  function setcomissionpercentage(value: string): void {
-    throw new Error("Function not implemented.");
-  }
-
+  const handleComissionPercentageChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setComissionPercentage(e.target.value);
+  };
   return (
     <div>
       <h1>Merchant Form</h1>
@@ -237,7 +241,7 @@ const MerchantForm: React.FC = () => {
         <div>
           <label>Notes</label>
           <input
-            type="number"
+            type="text"
             value={notes}
             onChange={(e) => setnotes(e.target.value)}
           />
@@ -250,7 +254,7 @@ const MerchantForm: React.FC = () => {
             id="smallBusiness"
             name="businesstype"
             value="Small Business"
-            checked={business === "Small Business"}
+            checked={businesstype === "Small Business"}
             onChange={handleTitleChange}
           />
           <label htmlFor="smallBusiness">Small Business</label>
@@ -261,7 +265,7 @@ const MerchantForm: React.FC = () => {
             id="enterprise"
             name="business"
             value="Enterprise"
-            checked={business === "Enterprise"}
+            checked={businesstype === "Enterprise"}
             onChange={handleTitleChange}
           />
           <label htmlFor="enterprise">Enterprise</label>
@@ -272,50 +276,56 @@ const MerchantForm: React.FC = () => {
             id="entrepreneur"
             name="business"
             value="Entrepreneur"
-            checked={business === "Entrepreneur"}
+            checked={businesstype === "Entrepreneur"}
             onChange={handleTitleChange}
           />
           <label htmlFor="entrepreneur">Entrepreneur</label>
         </div>
 
-        
-          <h4>Category</h4>
-          <select value={category} onChange={handleCategoryChange}>
-            <option value="Toys">Toys</option>
-            <option value="clothes">Clothes</option>
-            <option value="Groceries">Groceries</option>
-            <option value="electronics">Electronics</option>
-            <option value="digital">Digital</option>
-          </select>
-            <label>Comission</label>
-            <input
-              type="text"
-              value={comissionpercentage}
-              onChange={(e) => setcomissionpercentage(e.target.value)}
-              />
-           
-          <h4>Payment Options</h4>
-          <input
-            type="radio"
-            id="internetBanking"
-            name="paymentOption"
-            value="Internet Banking"
-            checked={paymentOption === "Internet Banking"}
-            onChange={handlePaymentOptionChange}
-          />
-          <label htmlFor="internetBanking">Internet Banking</label>
-        <div/>
-        <div>
-          <input
-            type="radio"
-            id="cashOnDelivery"
-            name="paymentOption"
-            value="Cash On Delivery"
-            checked={paymentOption === "Cash On Delivery"}
-            onChange={handlePaymentOptionChange}
-          />
-          <label htmlFor="cashOnDelivery">Cash On Delivery</label>
-        <div/>
+        <h4>Category</h4>
+        <select value={category} onChange={handleCategoryChange}>
+          <option value="Toys">Toys</option>
+          <option value="clothes">Clothes</option>
+          <option value="Groceries">Groceries</option>
+          <option value="electronics">Electronics</option>
+          <option value="digital">Digital</option>
+        </select>
+        <label>Comission Percentage</label>
+        <input
+          type="text"
+          value={comissionpercentage}
+          onChange={handleComissionPercentageChange}
+        />
+       <label>Activeform</label>
+       <input
+  type="date"
+  name="ActiveFrom"
+  id="date"
+  value={activefrom}
+  onChange={(event) => setActiveFrom(event.target.value)}
+/>        
+        <h4>Payment Options</h4>
+        <input
+          type="radio"
+          id="internetBanking"
+          name="paymentOption"
+          value="Internet Banking"
+          checked={paymentOption === "Internet Banking"}
+          onChange={handlePaymentOptionChange}
+        />
+        <label htmlFor="internetBanking">Internet Banking</label>
+        <div />
+
+        <input
+          type="radio"
+          id="cashOnDelivery"
+          name="paymentOption"
+          value="Cash On Delivery"
+          checked={paymentOption === "Cash On Delivery"}
+          onChange={handlePaymentOptionChange}
+        />
+        <label htmlFor="cashOnDelivery">Cash On Delivery</label>
+        <div />
         <div>
           <input
             type="radio"
@@ -382,8 +392,9 @@ const MerchantForm: React.FC = () => {
             <th>Notes</th>
             <th>Business Type</th>
             <th>Selected Category</th>
-            <th>Commission Percentage</th>
-            <th>Critical Account</th>
+            <th>Comission Percentage</th>
+            <th>Active From</th>
+             <th>Critical Account</th>
             <th>Payment Option</th>
             <th>Edit/Delete</th>
           </tr>
@@ -398,22 +409,24 @@ const MerchantForm: React.FC = () => {
               <td>{merchant.contactname}</td>
               <td>{merchant.contactnumber}</td>
               <td>{merchant.contactemail}</td>
-              <td>{merchant.business}</td>
               <td>{merchant.notes}</td>
-              <td>{merchant.paymentOption}</td>
+              <td>{merchant.businesstype}</td>
               <td>{merchant.category}</td>
               <td>{merchant.comissionpercentage}</td>
+              <td>{merchant.activefrom}</td>
               <td>{merchant.criticalAccount.join(", ")}</td>
+              <td>{merchant.paymentOption}</td>
+
               <td>
                 <button onClick={() => handleEdit(index)}>Edit</button>
                 <button onClick={() => handleDelete(index)}>Delete</button>
               </td>
             </tr>
-          )
+          ))}
         </tbody>
       </table>
     </div>
   );
 };
+ export default MerchantForm;
 
-export default MerchantForm;
