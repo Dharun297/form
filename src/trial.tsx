@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { ChangeEvent, ReactNode, useEffect, useState } from "react";
-axios.defaults.baseURL = "http://localhost:5000/";
+axios.defaults.baseURL = "http://localhost:4000/student";
 
 
 interface Merchant {
@@ -42,7 +42,7 @@ const MerchantForm: React.FC = () => {
   useEffect(() => {
     // Fetch merchant data from the backend when the component mounts
     axios
-      .get("http://localhost:3000/api/Signup") // Changed post to get for fetching data
+      .get("/") // Changed post to get for fetching data
       .then((response) => {
         setMerchantData(response.data);
       })
@@ -95,13 +95,12 @@ const MerchantForm: React.FC = () => {
     updatedMerchants.splice(index, 1);
     setMerchantData(updatedMerchants);
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     // Placeholder for calculateCommission function
     const calculatedCommission = calculateCommission();
-
+  
     const newMerchant: Merchant = {
       name,
       email,
@@ -118,7 +117,16 @@ const MerchantForm: React.FC = () => {
       activefrom,
       paymentOption,
     };
-
+  
+    try {
+      const response = await axios.post('http://localhost:4000/student', newMerchant);
+      console.log('New merchant created:', response.data);
+      // Handle success, update state, or perform necessary actions
+    } catch (error) {
+      console.error('Error creating new merchant:', error);
+      // Handle error
+    }
+  
     if (editingIndex !== -1) {
       const updatedMerchants = [...merchantData];
       updatedMerchants[editingIndex] = newMerchant;
@@ -127,7 +135,7 @@ const MerchantForm: React.FC = () => {
     } else {
       setMerchantData([...merchantData, newMerchant]);
     }
-
+  
     // Clear form fields
     setName("");
     setEmail("");
@@ -142,8 +150,10 @@ const MerchantForm: React.FC = () => {
     setCriticalAccount([]);
     setComissionPercentage("");
     setActiveFrom("");
+  
+    return null; // Add this line to resolve the TypeScript error
   };
-
+  
   const calculateCommission = () => {
     let calculatedCommission = 0;
 
@@ -414,7 +424,8 @@ const MerchantForm: React.FC = () => {
               <td>{merchant.category}</td>
               <td>{merchant.comissionpercentage}</td>
               <td>{merchant.activefrom}</td>
-              <td>{merchant.criticalAccount.join(", ")}</td>
+              <td>{merchant.criticalAccount ? merchant.criticalAccount.join(", ") : ''}</td>
+
               <td>{merchant.paymentOption}</td>
 
               <td>
@@ -429,4 +440,3 @@ const MerchantForm: React.FC = () => {
   );
 };
  export default MerchantForm;
-
