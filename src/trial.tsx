@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { ChangeEvent, ReactNode, useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
 axios.defaults.baseURL = "http://localhost:4000/student";
 
 
@@ -16,7 +16,7 @@ interface Merchant {
   category: string;
   comissionpercentage: number | string;
   activefrom: string;
-  paymentOption: string;
+  paymentOptions: string[];
   criticalAccount: string[];
 }
 
@@ -34,7 +34,7 @@ const MerchantForm: React.FC = () => {
   const [comissionpercentage, setComissionPercentage] = useState<string>("");
   const [activefrom, setActiveFrom] = useState<string>("");
   const [criticalAccount, setCriticalAccount] = useState<string[]>([]);
-  const [paymentOption, setPaymentOption] = useState<string>("");
+  const [paymentOptions, setPaymentOptions] = useState<string[]>([]);
   const [merchantData, setMerchantData] = useState<Merchant[]>([]);
   const [selectedPaymentOption, setSelectedPaymentOption] =    useState<string>("All");
   const [editingIndex, setEditingIndex] = useState<number>(-1);
@@ -51,12 +51,19 @@ const MerchantForm: React.FC = () => {
       });
   }, []);
 
-  const handlePaymentOptionChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setPaymentOption(e.target.value);
+  const handlePaymentOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (paymentOptions) {
+      if (paymentOptions.includes(value)) {
+        setPaymentOptions(paymentOptions.filter((item) => item !== value));
+      } else {
+        setPaymentOptions([...paymentOptions, value]);
+      }
+    } else {
+      setPaymentOptions([value]); // Initialize paymentOptions if it's undefined
+    }
   };
-
+  
   const handleCriticalAccountChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -81,7 +88,7 @@ const MerchantForm: React.FC = () => {
     setbusinesstype(merchantToEdit.businesstype);
     setComissionPercentage(String(merchantToEdit.comissionpercentage));
     setActiveFrom(new Date(merchantToEdit.activefrom).toISOString());
-    setPaymentOption(merchantToEdit.paymentOption);
+    setPaymentOptions(Array.isArray(merchantToEdit.paymentOptions) ? merchantToEdit.paymentOptions : [merchantToEdit.paymentOptions]);
     setCriticalAccount(merchantToEdit.criticalAccount);
     setEditingIndex(index);
   };
@@ -98,9 +105,6 @@ const MerchantForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
-    // Placeholder for calculateCommission function
-    const calculatedCommission = calculateCommission();
-  
     const newMerchant: Merchant = {
       name,
       email,
@@ -115,7 +119,7 @@ const MerchantForm: React.FC = () => {
       category,
       comissionpercentage,
       activefrom,
-      paymentOption,
+      paymentOptions,
     };
   
     try {
@@ -146,37 +150,26 @@ const MerchantForm: React.FC = () => {
     setcontactemail("");
     setbusinesstype("");
     setnotes("");
-    setPaymentOption("");
+    setPaymentOptions([]);
     setCriticalAccount([]);
     setComissionPercentage("");
     setActiveFrom("");
   
     return null; // Add this line to resolve the TypeScript error
   };
-  
-  const calculateCommission = () => {
-    let calculatedCommission = 0;
+ 
+ 
 
-    if (paymentOption === "Internet Banking") {
-      calculatedCommission = 0.02;
-    } else if (paymentOption === "Cash On Delivery") {
-      calculatedCommission = 0.05;
-    } else if (paymentOption === "UPI") {
-      calculatedCommission = 0.03;
-    }
-
-    return calculatedCommission;
-  };
-
+ 
   const filterMerchantData = () => {
     let filteredData = [...merchantData];
-
+  
     if (selectedPaymentOption !== "All") {
       filteredData = filteredData.filter(
-        (merchant) => merchant.paymentOption === selectedPaymentOption
+        (merchant) => merchant.paymentOptions && merchant.paymentOptions.includes(selectedPaymentOption)
       );
     }
-
+  
     return filteredData;
   };
 
@@ -316,37 +309,37 @@ const MerchantForm: React.FC = () => {
 />        
         <h4>Payment Options</h4>
         <input
-          type="radio"
-          id="internetBanking"
-          name="paymentOption"
-          value="Internet Banking"
-          checked={paymentOption === "Internet Banking"}
-          onChange={handlePaymentOptionChange}
-        />
-        <label htmlFor="internetBanking">Internet Banking</label>
-        <div />
+  type="checkbox"
+  id="internetBanking"
+  name="Internet Banking" // Update the name attribute here
+  value="Internet Banking"
+  checked={paymentOptions.includes("Internet Banking")}
+  onChange={handlePaymentOptionChange}
+/>
+<label htmlFor="internetBanking">Internet Banking</label>
+<div />
+<input
+  type="checkbox"
+  id="cashOnDelivery"
+  name="Cash On Delivery" // Update the name attribute here
+  value="CashOnDelivery"
+  checked={paymentOptions.includes("CashOnDelivery")}
+  onChange={handlePaymentOptionChange}
+/>
+<label htmlFor="cashOnDelivery">Cash On Delivery</label>
+<div />
 
-        <input
-          type="radio"
-          id="cashOnDelivery"
-          name="paymentOption"
-          value="Cash On Delivery"
-          checked={paymentOption === "Cash On Delivery"}
-          onChange={handlePaymentOptionChange}
-        />
-        <label htmlFor="cashOnDelivery">Cash On Delivery</label>
-        <div />
-        <div>
-          <input
-            type="radio"
-            id="upi"
-            name="paymentOption"
-            value="UPI"
-            checked={paymentOption === "UPI"}
-            onChange={handlePaymentOptionChange}
-          />
-          <label htmlFor="upi">UPI</label>
-        </div>
+  <div>
+  <input
+    type="checkbox"
+    id="upi"
+    name="UPI" // Update the name attribute here
+    value="UPI"
+    checked={paymentOptions.includes("UPI")}
+    onChange={handlePaymentOptionChange}
+  />
+  <label htmlFor="upi">UPI</label>
+</div>
         <br />
 
         <label>Critical Account</label>
@@ -426,7 +419,7 @@ const MerchantForm: React.FC = () => {
               <td>{merchant.activefrom}</td>
               <td>{merchant.criticalAccount ? merchant.criticalAccount.join(", ") : ''}</td>
 
-              <td>{merchant.paymentOption}</td>
+              <td>{merchant.paymentOptions}</td>
 
               <td>
                 <button onClick={() => handleEdit(index)}>Edit</button>
@@ -434,7 +427,7 @@ const MerchantForm: React.FC = () => {
               </td>
             </tr>
           ))}
-        </tbody>
+        </tbody>  
       </table>
     </div>
   );
